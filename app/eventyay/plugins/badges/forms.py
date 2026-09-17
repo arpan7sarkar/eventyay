@@ -110,11 +110,6 @@ class BadgeLayoutSettingsForm(forms.Form):
             cleaned_data['required_badge_fields'] = []
             return cleaned_data
 
-        if not cleaned_data.get('allow_customization'):
-            cleaned_data['ask_user_fields'] = []
-            cleaned_data['required_badge_fields'] = []
-            cleaned_data['allow_badge_editing'] = False
-
         # Ensure required fields are also in ask_user_fields
         required_fields = set(cleaned_data.get('required_badge_fields', []))
         ask_user = set(cleaned_data.get('ask_user_fields', []))
