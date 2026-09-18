@@ -7,6 +7,8 @@ from django_scopes import scopes_disabled
 
 from eventyay.base.models import Event, Order, OrderPosition, Organizer, Product
 from eventyay.plugins.badges.forms import BadgeOptionsField
+from eventyay.plugins.badges.models import BadgeProduct
+from eventyay.plugins.badges.signals import BADGE_HIDDEN_FIELDS_KEY, badge_question_form_fields
 from eventyay.plugins.badges.utils import (
     get_badge_hidden_fields,
     save_badge_customization,
@@ -134,3 +136,74 @@ def test_badge_renderer_ignores_hidden_if_required(badge_customization_env):
     # meaning it WILL be rendered.
     assert 'attendee_name' not in hidden
     assert 'attendee_company' in hidden
+
+
+@pytest.fixture
+def badge_bundle_env():
+    with scopes_disabled():
+        organizer = Organizer.objects.create(name='CCC', slug='ccc')
+        event = Event.objects.create(
+            organizer=organizer,
+            name='30C3',
+            slug='30c3',
+            plugins='eventyay.plugins.badges',
+            date_from=datetime.datetime(2013, 12, 26, tzinfo=datetime.UTC),
+        )
+        root_product = Product.objects.create(event=event, name='Ticket', default_price=0, admission=True, position=1)
+        addon_product = Product.objects.create(event=event, name='Workshop', default_price=0, position=2)
+
+        root_layout = event.badge_layouts.create(name='Root layout', allow_customization=False)
+        root_layout.required_badge_fields_data = ['attendee_job_title']
+        root_layout.save(update_fields=['required_badge_fields'])
+        addon_layout = event.badge_layouts.create(name='Add-on layout', allow_customization=True)
+        addon_layout.ask_user_fields_data = ['attendee_job_title']
+        addon_layout.save(update_fields=['ask_user_fields'])
+
+        BadgeProduct.objects.create(product=root_product, layout=root_layout)
+        BadgeProduct.objects.create(product=addon_product, layout=addon_layout)
+
+        order = Order.objects.create(
+            event=event,
+            email='dummy@dummy.test',
+            status=Order.STATUS_PENDING,
+            datetime=datetime.datetime(2013, 12, 26, tzinfo=datetime.UTC),
+            expires=datetime.datetime(2014, 1, 26, tzinfo=datetime.UTC),
+            total=0,
+        )
+        root_position = OrderPosition.objects.create(
+            order=order,
+            product=root_product,
+            price=Decimal('0.00'),
+            positionid=1,
+            secret='secret-bundle-root',
+        )
+        OrderPosition.objects.create(
+            order=order,
+            product=addon_product,
+            price=Decimal('0.00'),
+            positionid=2,
+            addon_to=root_position,
+            secret='secret-bundle-addon',
+        )
+
+        return {
+            'event': event,
+            'root_position': root_position,
+        }
+
+
+@pytest.mark.django_db
+def test_bundle_ignores_required_fields_of_uncustomizable_root_layout(badge_bundle_env):
+    event = badge_bundle_env['event']
+    root_position = badge_bundle_env['root_position']
+
+    with scopes_disabled():
+        fields = badge_question_form_fields(sender=event, position=root_position)
+
+    # The add-on layout allows customization, so the bundle still offers its field.
+    field = fields[BADGE_HIDDEN_FIELDS_KEY]
+    assert [value for value, _label in field.choices] == ['attendee_job_title']
+
+    # The root layout does not allow customization, so it must not force any field.
+    assert field.required_keys == set()
+    assert field.clean([]) == ['attendee_job_title']

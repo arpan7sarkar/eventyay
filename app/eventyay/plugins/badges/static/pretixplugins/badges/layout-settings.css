@@ -1,7 +1,5 @@
-/* Collapse the per-field badge settings while badge customization is switched off.
-   Keyed off the checkbox itself so the disclosure works without JavaScript, which
-   inline scripts cannot provide because CSP blocks them. The :has(table) guard keeps
-   the "no dynamic text fields" notice visible for layouts with nothing to customize. */
-.form-group:has(#id_allow_customization:not(:checked)) + #badge-customization-fields:has(table) {
+/* Disclosure for the per-field badge settings, keyed off the checkbox so it needs no
+   JavaScript. :has(table) keeps the "no dynamic text fields" notice visible. */
+fieldset:has(#id_allow_customization:not(:checked)) #badge-customization-fields:has(table) {
     display: none;
 }

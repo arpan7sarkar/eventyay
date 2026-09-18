@@ -161,7 +161,7 @@ def badge_question_form_fields(sender, position, **kwargs):
 
     from eventyay.plugins.badges.utils import get_badge_layout_for_position
     layout = get_badge_layout_for_position(sender, position)
-    required_keys = layout.required_badge_fields_data if layout else []
+    required_keys = layout.required_badge_fields_data if layout and layout.allow_customization else []
 
     return {
         BADGE_HIDDEN_FIELDS_KEY: BadgeOptionsField(
