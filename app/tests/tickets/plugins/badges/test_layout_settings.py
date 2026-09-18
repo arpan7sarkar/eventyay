@@ -47,7 +47,7 @@ class BadgeLayoutSettingsViewTest(SoupTest):
         assert set(self.layout.required_badge_fields_data) == {'attendee_job_title', 'attendee_company'}
 
     def test_disabling_customization_keeps_field_settings(self):
-        self.client.post(
+        response = self.client.post(
             self.url,
             {
                 'allow_customization': 'on',
@@ -55,6 +55,11 @@ class BadgeLayoutSettingsViewTest(SoupTest):
                 'required_badge_fields': ['attendee_company'],
             },
         )
+        assert response.status_code == 302
+
+        self.layout.refresh_from_db()
+        assert self.layout.allow_customization
+
         response = self.client.post(
             self.url,
             {
