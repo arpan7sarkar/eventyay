@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory
 from django_scopes import scope
 
 from eventyay.common.templatetags.event_tags import can_list_schedule, can_view_featured_sessions_public
@@ -138,6 +139,45 @@ def test_can_view_featured_sessions_public_respects_never_with_staff_session(eve
     user.has_active_staff_session = always_active_staff_session
 
     assert can_view_featured_sessions_public({'request': request}, event=event) is False
+
+
+def _featured_nav_visible(event, user=None):
+    request = RequestFactory().get('/')
+    request.event = event
+    request.user = user or AnonymousUser()
+    return can_view_featured_sessions_public({'request': request}, event=event)
+
+
+@pytest.mark.django_db
+def test_can_view_featured_sessions_public_until_schedule(event, confirmed_submission):
+    with scope(event=event):
+        event.feature_flags['show_featured'] = 'until_schedule'
+        event.save()
+        assert _featured_nav_visible(event) is False
+
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+        assert _featured_nav_visible(event) is True
+
+        event.release_schedule('v1')
+        event.__dict__.pop('current_schedule', None)
+        assert _featured_nav_visible(event) is False
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    'mode,expected_before',
+    (('never', False), ('after_schedule', True), ('always', True)),
+)
+def test_can_view_featured_sessions_public_unpublished_other_modes(
+    event, confirmed_submission, mode, expected_before
+):
+    with scope(event=event):
+        event.feature_flags['show_featured'] = mode
+        event.save()
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+        assert _featured_nav_visible(event) is expected_before
 
 
 @pytest.mark.django_db

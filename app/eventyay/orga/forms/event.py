@@ -35,17 +35,20 @@ SCHEDULE_DISPLAY_CHOICES = (
 
 SHOW_FEATURED_VISIBILITY_CHOICES = (
     ('never', _('Never')),
+    ('until_schedule', _('Until the first schedule is published')),
     ('after_schedule', _('Once the first schedule version is published')),
     ('always', _('Always')),
 )
 
 SHOW_FEATURED_SESSIONS_HELP = _(
-    'Controls when the featured sessions page and nav tab are shown. '
+    'Controls when the featured sessions page and nav tab are shown: never, as a teaser until the '
+    'first schedule is published, only once the first schedule version is published, or always. '
     'Mark sessions as featured for content — Always alone does not populate the page.'
 )
 SHOW_FEATURED_SPEAKERS_HELP = _(
-    'Controls the featured speakers block on the event info page. '
-    'Mark speakers as featured for content — Always alone does not populate the page.'
+    'Controls when the featured speakers block on the event info page is shown: never, as a teaser '
+    'until the first schedule is published, only once the first schedule version is published, or '
+    'always. Mark speakers as featured for content — Always alone does not populate the page.'
 )
 
 

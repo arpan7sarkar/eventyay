@@ -1,9 +1,11 @@
 import pytest
 from django_scopes import scope
 
+from eventyay.base.models import Submission
+
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("featured", ("always", "never", "after_schedule"))
+@pytest.mark.parametrize("featured", ("always", "never", "until_schedule", "after_schedule"))
 def test_featured_invisible_because_setting(
     client, django_assert_max_num_queries, event, featured, confirmed_submission
 ):
@@ -39,7 +41,7 @@ def test_featured_invisible_when_setting_unset(
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize("featured", ("always", "never", "after_schedule"))
+@pytest.mark.parametrize("featured", ("always", "never", "until_schedule", "after_schedule"))
 @pytest.mark.django_db
 def test_featured_invisible_because_schedule(
     client, django_assert_max_num_queries, event, featured
@@ -55,6 +57,73 @@ def test_featured_invisible_because_schedule(
         assert response.status_code == 200
     else:
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_featured_until_schedule_invisible_without_featured_sessions(client, event):
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "until_schedule"
+        event.save()
+    assert client.get(event.urls.featured, follow=True).status_code == 404
+
+
+@pytest.mark.django_db
+def test_featured_until_schedule_stops_after_first_schedule(
+    client, event, confirmed_submission
+):
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "until_schedule"
+        event.save()
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+    assert client.get(event.urls.featured, follow=True).status_code == 200
+
+    with scope(event=event):
+        event.release_schedule("42")
+    assert client.get(event.urls.featured, follow=True).status_code == 404
+
+
+@pytest.mark.django_db
+def test_featured_until_schedule_keeps_featured_flag(client, event, confirmed_submission):
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "until_schedule"
+        event.save()
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+        event.release_schedule("42")
+    assert client.get(event.urls.featured, follow=True).status_code == 404
+    with scope(event=event):
+        assert Submission.objects.get(pk=confirmed_submission.pk).is_featured is True
+
+
+@pytest.mark.django_db
+def test_featured_switch_to_always_restores_visibility(client, event, confirmed_submission):
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "until_schedule"
+        event.save()
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+        event.release_schedule("42")
+    assert client.get(event.urls.featured, follow=True).status_code == 404
+
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "always"
+        event.save()
+    response = client.get(event.urls.featured, follow=True)
+    assert response.status_code == 200
+    assert confirmed_submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_featured_after_schedule_still_previews_before_schedule(
+    client, event, confirmed_submission
+):
+    with scope(event=event):
+        event.feature_flags["show_featured"] = "after_schedule"
+        event.save()
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
+    assert client.get(event.urls.featured, follow=True).status_code == 200
 
 
 @pytest.mark.django_db

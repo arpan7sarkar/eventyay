@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from eventyay.base.models import Event
+from eventyay.orga.forms.event import SHOW_FEATURED_VISIBILITY_CHOICES
 
 
 def get_settings_form_data(event):
@@ -247,6 +248,28 @@ def test_event_change_date(event, orga_client, slot):
     wip_slot.refresh_from_db()
     assert slot.start == old_slot_start
     assert wip_slot.start == old_wip_slot_start + delta
+
+
+def test_show_featured_choices_order():
+    assert [value for value, _label in SHOW_FEATURED_VISIBILITY_CHOICES] == [
+        "never",
+        "until_schedule",
+        "after_schedule",
+        "always",
+    ]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("mode", ("never", "until_schedule", "after_schedule", "always"))
+def test_show_featured_round_trip(event, orga_client, mode):
+    data = get_settings_form_data(event)
+    data["show_featured"] = mode
+    data["show_featured_speakers"] = mode
+    response = orga_client.post(event.orga_urls.edit_settings, data, follow=True)
+    assert response.status_code == 200
+    event = Event.objects.get(pk=event.pk)
+    assert event.feature_flags["show_featured"] == mode
+    assert event.feature_flags["show_featured_speakers"] == mode
 
 
 @pytest.mark.django_db

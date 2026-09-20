@@ -8,6 +8,7 @@ from django_scopes import scope
 
 from eventyay.base.models import SpeakerProfile
 from eventyay.talk_rules.agenda import is_pre_agenda_featured_public, is_speaker_viewable
+from eventyay.talk_rules.submission import are_featured_speakers_visible
 
 User = get_user_model()
 
@@ -29,6 +30,66 @@ def _assert_speakers_list_redirects(client, event, *, expected_message):
     assert response.request['PATH_INFO'].rstrip('/') == _event_base_path(event)
     messages = [str(message) for message in get_messages(response.wsgi_request)]
     assert expected_message in messages
+
+
+def _featured_speaker_profile(event, *, featured=True):
+    user = User.objects.create_user(
+        email='until-schedule@example.com',
+        password='testpass123',
+        fullname='Until Schedule Speaker',
+    )
+    return SpeakerProfile.objects.create(
+        event=event,
+        user=user,
+        biography='Featured biography.',
+        is_featured=featured,
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('flag_key', ('show_featured_speakers', 'show_featured'))
+def test_featured_speakers_until_schedule_stops_after_first_schedule(event, flag_key):
+    with scope(event=event):
+        profile = _featured_speaker_profile(event)
+        event.feature_flags.pop('show_featured_speakers', None)
+        event.feature_flags[flag_key] = 'until_schedule'
+        event.save(update_fields=['feature_flags'])
+        assert are_featured_speakers_visible(None, event) is True
+
+        event.release_schedule('v1')
+        event.__dict__.pop('current_schedule', None)
+        assert are_featured_speakers_visible(None, event) is False
+        assert SpeakerProfile.objects.get(pk=profile.pk).is_featured is True
+
+        event.feature_flags['show_featured_speakers'] = 'always'
+        event.save(update_fields=['feature_flags'])
+        assert are_featured_speakers_visible(None, event) is True
+
+
+@pytest.mark.django_db
+def test_featured_speakers_until_schedule_hidden_without_featured_speakers(event):
+    with scope(event=event):
+        _featured_speaker_profile(event, featured=False)
+        event.feature_flags['show_featured_speakers'] = 'until_schedule'
+        event.save(update_fields=['feature_flags'])
+        assert are_featured_speakers_visible(None, event) is False
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    'mode,expected_before,expected_after',
+    (('never', False, False), ('after_schedule', True, True), ('always', True, True)),
+)
+def test_featured_speakers_other_modes_unchanged_by_publication(event, mode, expected_before, expected_after):
+    with scope(event=event):
+        _featured_speaker_profile(event)
+        event.feature_flags['show_featured_speakers'] = mode
+        event.save(update_fields=['feature_flags'])
+        assert are_featured_speakers_visible(None, event) is expected_before
+
+        event.release_schedule('v1')
+        event.__dict__.pop('current_schedule', None)
+        assert are_featured_speakers_visible(None, event) is expected_after
 
 
 @pytest.mark.django_db
