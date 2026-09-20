@@ -618,3 +618,36 @@ def test_reviewer_cannot_see_speaker_answer_hidden_from_reviewers(
     assert response.status_code == 200
     assert str(question.question) not in response.text
     assert speaker_answer.answer not in response.text
+
+
+@pytest.mark.django_db
+def test_review_page_speaker_data_does_not_scale_with_speakers(
+    review_client, submission, speaker_answer, other_speaker, django_assert_max_num_queries
+):
+    with scope(event=submission.event):
+        submission.speakers.add(other_speaker)
+        for user in submission.speakers.all():
+            profile = user.event_profile(submission.event)
+            profile.social_links.create(network="github", url=f"https://github.com/{user.code}")
+            profile.social_links.create(network="mastodon", url=f"https://mastodon.example/{user.code}")
+
+    with django_assert_max_num_queries(80) as captured:
+        response = review_client.get(submission.orga_urls.reviews, follow=True)
+    assert response.status_code == 200
+
+    queries = [query["sql"] for query in captured.captured_queries]
+    social_link_queries = [query for query in queries if "sociallink" in query.lower()]
+    assert len(social_link_queries) == 1
+
+
+@pytest.mark.django_db
+def test_review_page_names_speakers_when_there_are_several(
+    review_client, submission, other_speaker
+):
+    with scope(event=submission.event):
+        submission.speakers.add(other_speaker)
+        names = [speaker.get_display_name() for speaker in submission.speakers.all()]
+    response = review_client.get(submission.orga_urls.reviews, follow=True)
+    assert response.status_code == 200
+    for name in names:
+        assert f'{name}\n' in response.text

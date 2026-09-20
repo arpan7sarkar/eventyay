@@ -137,7 +137,7 @@ class SpeakerProfile(PretalxModel):
 
         return self.answers.filter(question__target=TalkQuestionTarget.SPEAKER)
 
-    @property
+    @cached_property
     def reviewer_speaker_answers(self):
         return self.speaker_answers.filter(question__is_visible_to_reviewers=True)
 

@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Max, OuterRef, Q, Subquery
+from django.db.models import Count, Max, OuterRef, Prefetch, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -35,6 +35,7 @@ from eventyay.orga.forms.submission import SubmissionStateChangeForm
 from eventyay.orga.views.submission import BaseSubmissionList
 from eventyay.submission.forms import TalkQuestionsForm, SubmissionFilterForm
 from eventyay.base.models import Review, Submission, SubmissionStates
+from eventyay.base.models.profile import SpeakerProfile
 from eventyay.talk_rules.submission import (
     get_missing_reviews,
     get_reviewable_submissions,
@@ -459,8 +460,16 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         )
 
     @context
+    @cached_property
     def profiles(self):
-        return [speaker.event_profile(self.request.event) for speaker in self.submission.speakers.all()]
+        speakers = self.submission.speakers.all().prefetch_related(
+            Prefetch(
+                'profiles',
+                queryset=SpeakerProfile.objects.filter(event=self.request.event).prefetch_related('social_links'),
+                to_attr='_event_profiles',
+            )
+        )
+        return [speaker.event_profile(self.request.event) for speaker in speakers]
 
     @context
     @cached_property
