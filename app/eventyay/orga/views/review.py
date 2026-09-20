@@ -34,7 +34,7 @@ from eventyay.orga.forms.review import (
 from eventyay.orga.forms.submission import SubmissionStateChangeForm
 from eventyay.orga.views.submission import BaseSubmissionList
 from eventyay.submission.forms import TalkQuestionsForm, SubmissionFilterForm
-from eventyay.base.models import Review, Submission, SubmissionStates
+from eventyay.base.models import Answer, Review, Submission, SubmissionStates, TalkQuestionTarget
 from eventyay.base.models.profile import SpeakerProfile
 from eventyay.talk_rules.submission import (
     get_missing_reviews,
@@ -462,14 +462,31 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     @context
     @cached_property
     def profiles(self):
+        event = self.request.event
         speakers = self.submission.speakers.all().prefetch_related(
             Prefetch(
                 'profiles',
-                queryset=SpeakerProfile.objects.filter(event=self.request.event).prefetch_related('social_links'),
+                queryset=SpeakerProfile.objects.filter(event=event).prefetch_related('social_links'),
                 to_attr='_event_profiles',
-            )
+            ),
+            Prefetch(
+                'answers',
+                queryset=Answer.objects.filter(
+                    question__event=event,
+                    question__target=TalkQuestionTarget.SPEAKER,
+                    question__is_visible_to_reviewers=True,
+                )
+                .select_related('question')
+                .order_by('question__position'),
+                to_attr='_reviewer_speaker_answers',
+            ),
         )
-        return [speaker.event_profile(self.request.event) for speaker in speakers]
+        profiles = []
+        for speaker in speakers:
+            profile = speaker.event_profile(event)
+            profile.reviewer_speaker_answers = speaker._reviewer_speaker_answers
+            profiles.append(profile)
+        return profiles
 
     @context
     @cached_property

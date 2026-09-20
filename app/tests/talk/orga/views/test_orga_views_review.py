@@ -637,7 +637,9 @@ def test_review_page_speaker_data_does_not_scale_with_speakers(
 
     queries = [query["sql"] for query in captured.captured_queries]
     social_link_queries = [query for query in queries if "sociallink" in query.lower()]
+    answer_queries = [query for query in queries if "base_answer" in query and "base_talkquestion" in query]
     assert len(social_link_queries) == 1
+    assert len(answer_queries) == 2  # one for submission answers, one prefetch for all speakers
 
 
 @pytest.mark.django_db
