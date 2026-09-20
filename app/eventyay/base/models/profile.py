@@ -130,6 +130,17 @@ class SpeakerProfile(PretalxModel):
     def reviewer_answers(self):
         return self.answers.filter(question__is_visible_to_reviewers=True).order_by('question__position')
 
+    @property
+    def speaker_answers(self):
+        """Answers to speaker questions only, without the answers given for talks."""
+        from eventyay.base.models.question import TalkQuestionTarget
+
+        return self.answers.filter(question__target=TalkQuestionTarget.SPEAKER)
+
+    @property
+    def reviewer_speaker_answers(self):
+        return self.speaker_answers.filter(question__is_visible_to_reviewers=True)
+
     @cached_property
     def avatar(self):
         if self.event.cfp.request_avatar:

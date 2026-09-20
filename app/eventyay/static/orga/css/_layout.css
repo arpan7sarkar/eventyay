@@ -2098,6 +2098,17 @@ div.mail-preview {
   float: right;
 }
 
+.speaker-social-link {
+  white-space: nowrap;
+}
+
+.speaker-social-icon svg {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
 .user-name-display {
   img {
     border-radius: 50%;

@@ -305,19 +305,20 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
         speakers_qs = submission.speakers.all().prefetch_related(
             Prefetch(
                 'profiles',
-                queryset=SpeakerProfile.objects.filter(event=submission.event).prefetch_related('availabilities'),
+                queryset=SpeakerProfile.objects.filter(event=submission.event).prefetch_related(
+                    'availabilities', 'social_links'
+                ),
                 to_attr='_event_profiles',
             ),
             Prefetch(
                 'answers',
                 queryset=Answer.objects.filter(
                     question__event=submission.event,
-                    question__is_visible_to_reviewers=True,
                     question__target=TalkQuestionTarget.SPEAKER,
                 )
                 .select_related('question')
                 .order_by('question__position'),
-                to_attr='_reviewer_answers',
+                to_attr='_speaker_answers',
             ),
             Prefetch(
                 'submissions',
@@ -335,7 +336,7 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
                 'avatar_url': speaker.get_avatar_url(event=submission.event),
                 'avatar_source': speaker.avatar_source,
                 'avatar_license': speaker.avatar_license,
-                'reviewer_answers': speaker._reviewer_answers,
+                'answers': speaker._speaker_answers,
             }
             for speaker in speakers_qs
         ]

@@ -590,3 +590,31 @@ def test_orga_can_export_reviews(review, orga_client):
     )
     assert response.status_code == 200
     assert review.text in response.text
+
+
+@pytest.mark.django_db
+def test_reviewer_sees_speaker_information(review_client, submission, speaker_answer):
+    with scope(event=submission.event):
+        profile = submission.speakers.first().event_profile(submission.event)
+        profile.social_links.create(
+            network="github", url="https://github.com/eventyay"
+        )
+    response = review_client.get(submission.orga_urls.reviews, follow=True)
+    assert response.status_code == 200
+    assert str(speaker_answer.question.question) in response.text
+    assert speaker_answer.answer in response.text
+    assert "https://github.com/eventyay" in response.text
+
+
+@pytest.mark.django_db
+def test_reviewer_cannot_see_speaker_answer_hidden_from_reviewers(
+    review_client, submission, speaker_answer
+):
+    with scope(event=submission.event):
+        question = speaker_answer.question
+        question.is_visible_to_reviewers = False
+        question.save()
+    response = review_client.get(submission.orga_urls.reviews, follow=True)
+    assert response.status_code == 200
+    assert str(question.question) not in response.text
+    assert speaker_answer.answer not in response.text

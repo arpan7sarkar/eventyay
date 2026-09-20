@@ -336,9 +336,9 @@ def test_orga_speaker_page_excludes_submission_answers(
     assert submission.event.organizer.orga_urls.user_search in response.text
     speaker_context = response.context["speakers"][0]
     assert speaker_context["other_submissions"] == [other_submission]
-    reviewer_answers = speaker_context["reviewer_answers"]
-    assert speaker_answer in reviewer_answers
-    assert answer not in reviewer_answers
+    speaker_answers = speaker_context["answers"]
+    assert speaker_answer in speaker_answers
+    assert answer not in speaker_answers
 
 
 @pytest.mark.django_db
@@ -1175,3 +1175,29 @@ def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
     with scope(event=submission.event):
         submission.refresh_from_db()
         assert submission.comments.count() == 0
+
+
+@pytest.mark.django_db
+def test_orga_sees_speaker_answer_hidden_from_reviewers(
+    orga_client, submission, speaker_answer
+):
+    with scope(event=submission.event):
+        question = speaker_answer.question
+        question.is_visible_to_reviewers = False
+        question.save()
+    response = orga_client.get(submission.orga_urls.speakers, follow=True)
+    assert response.status_code == 200
+    assert str(question.question) in response.text
+    assert speaker_answer.answer in response.text
+
+
+@pytest.mark.django_db
+def test_orga_sees_speaker_social_links(orga_client, submission):
+    with scope(event=submission.event):
+        profile = submission.speakers.first().event_profile(submission.event)
+        profile.social_links.create(
+            network="github", url="https://github.com/eventyay"
+        )
+    response = orga_client.get(submission.orga_urls.speakers, follow=True)
+    assert response.status_code == 200
+    assert "https://github.com/eventyay" in response.text

@@ -1,0 +1,10 @@
+{% for answer in answers %}
+  <div class="mb-1">
+    <strong>{{ answer.question.question }}:</strong>
+    {% if answer.question.variant == 'boolean' %}
+      <span class="ml-1 value-pill {% if answer.boolean_answer %}value-pill--positive{% else %}value-pill--negative{% endif %}">{% include 'common/question_answer.html' with answer=answer %}</span>
+    {% else %}
+      <div class="ml-1 markdown-mt-0">{% include 'common/question_answer.html' with answer=answer %}</div>
+    {% endif %}
+  </div>
+{% endfor %}

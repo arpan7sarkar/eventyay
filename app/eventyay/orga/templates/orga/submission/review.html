@@ -7,6 +7,7 @@
 {% load rich_text %}
 {% load rules %}
 {% load static %}
+{% load thumbnail %}
 
 {% block submission_title %}{% translate "Reviews" %} :: {% endblock submission_title %}
 
@@ -155,6 +156,32 @@
                             {% endif %}
                         </div>
                     </div>
+                    {% if speaker.avatar_url %}
+                        <div class="form-group row">
+                            <label class="col-md-3 col-form-label">{% translate "Profile picture" %}</label>
+                            <div class="col-md-9 mt-2">
+                                <a href="{{ speaker.avatar_url }}" data-lightbox>
+                                    <img loading="lazy" width="100px" src="{% if speaker.avatar %}{{ speaker.avatar|thumbnail:"default" }}{% else %}{{ speaker.avatar_url }}{% endif %}" alt="{% translate "The speaker's profile picture" %}">
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if speaker.social_links.all %}
+                        <div class="form-group row">
+                            <label class="col-md-3 col-form-label">{% translate "Social Media" %}</label>
+                            <div class="col-md-9 mt-2">
+                                {% include "orga/includes/speaker_social_links.html" with profile=speaker %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if speaker.reviewer_speaker_answers %}
+                        <div class="form-group row">
+                            <label class="col-md-3 col-form-label">{% translate "Speaker Information" %}</label>
+                            <div class="col-md-9 mt-2">
+                                {% include "orga/includes/speaker_answers.html" with answers=speaker.reviewer_speaker_answers %}
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
 

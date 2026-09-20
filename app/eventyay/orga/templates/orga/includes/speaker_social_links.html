@@ -1,0 +1,10 @@
+{% for link in profile.social_links.all %}
+  <a class="speaker-social-link mr-3" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+    {% if link.spec.icon_class %}
+      <i class="fa {{ link.spec.icon_class }}"></i>
+    {% elif link.spec.icon_svg %}
+      <span class="speaker-social-icon">{{ link.spec.icon_svg|safe }}</span>
+    {% endif %}
+    {{ link.spec.label }}
+  </a>
+{% endfor %}
