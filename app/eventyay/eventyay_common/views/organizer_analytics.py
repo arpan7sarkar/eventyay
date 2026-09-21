@@ -103,14 +103,15 @@ class OrganizerAnalyticsView(OrganizerPermissionRequiredMixin, TemplateView):
                 series.append({'x': day, 'orders': orders, 'registrations': registrations})
             return series
 
-        # Gate on all events, not the selection: the panel holds the selector itself.
-        has_attendance = any(point['orders'] or point['registrations'] for point in project_series(permitted_event_ids))
+        all_events_series = project_series(permitted_event_ids)
+        series = project_series(selected_event_ids) if selected_event_id else all_events_series
 
         return {
             'attendance_events': selector_events,
             'attendance_selected_event_id': selected_event_id,
-            'attendance_over_time_json': json.dumps(project_series(selected_event_ids)),
-            'has_attendance': has_attendance,
+            'attendance_over_time_json': json.dumps(series),
+            # Gate on all events, not the selection: the panel holds the selector itself.
+            'has_attendance': any(point['orders'] or point['registrations'] for point in all_events_series),
         }
 
     def _event_ids_for_orders(self):
