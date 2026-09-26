@@ -360,9 +360,9 @@ def rich_text_snippet(text: str):
 
 @register.filter
 def rich_text_without_title(text: str):
-    """Render rich text without a leading heading, for pages that already show their own title."""
+    """Render rich text without a leading h1, for pages that already show their own title."""
     rendered = str(render_markdown(text, cleaner=CLEANER))
-    match = re.match(r'\s*<h([1-6])\b[^>]*>.*?</h\1>\s*', rendered, flags=re.DOTALL | re.IGNORECASE)
+    match = re.match(r'\s*<h1\b[^>]*>.*?</h1>\s*', rendered, flags=re.DOTALL | re.IGNORECASE)
     return mark_safe(rendered[match.end():] if match else rendered)
 
 
