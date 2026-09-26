@@ -99,3 +99,15 @@ def test_cfp_text_without_leading_heading_is_unchanged(client, event):
     main = doc.select_one('main')
     assert 'Send us your talk.' in main.get_text()
     assert doc.select_one('main .page-rich-text h2').get_text(strip=True) == 'Topics'
+
+
+@pytest.mark.django_db
+def test_cfp_text_leading_section_heading_is_kept(client, event):
+    _publish_talks(event)
+    with scope(event=event):
+        event.cfp.text = '## Topics\n\nAnything.'
+        event.cfp.save()
+    response = client.get(_cfp_url(event))
+    assert response.status_code == 200
+    doc = BeautifulSoup(response.rendered_content, 'lxml')
+    assert doc.select_one('main .page-rich-text h2').get_text(strip=True) == 'Topics'

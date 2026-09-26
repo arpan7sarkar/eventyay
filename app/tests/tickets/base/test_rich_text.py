@@ -152,6 +152,18 @@ def test_linkify_abs(link):
             '',
             '',
         ),
+        (
+            '## Topics\n\nAnything.',
+            '<h2>Topics</h2>\n<p>Anything.</p>',
+        ),
+        (
+            'Topics\n---\n\nAnything.',
+            '<h2>Topics</h2>\n<p>Anything.</p>',
+        ),
+        (
+            '### Details',
+            '<h3>Details</h3>',
+        ),
     ],
 )
 def test_rich_text_without_title_drops_leading_heading(text, expected):
