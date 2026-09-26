@@ -66,3 +66,36 @@ def test_empty_cfp_headline_renders_no_lede_and_no_empty_heading(client, event):
     doc = BeautifulSoup(response.rendered_content, 'lxml')
     assert len(doc.select('main p.page-lede')) == 0
     assert len(doc.select('main h2.content-header')) == 0
+
+
+@pytest.mark.django_db
+def test_cfp_text_leading_heading_is_dropped(client, event):
+    _publish_talks(event)
+    with scope(event=event):
+        event.cfp.text = '# Call for Proposals\n\nSend us your talk.\n\n## Topics\n\nAnything.'
+        event.cfp.save()
+    response = client.get(_cfp_url(event))
+    assert response.status_code == 200
+    doc = BeautifulSoup(response.rendered_content, 'lxml')
+    main = doc.select_one('main')
+    assert 'Call for Proposals' not in main.get_text()
+    h1s = main.select('h1')
+    assert len(h1s) == 1
+    assert h1s[0]['class'] == ['page-title']
+    assert h1s[0].get_text(strip=True) == 'Call for Speakers'
+    assert 'Send us your talk.' in main.get_text()
+    assert doc.select_one('main .page-rich-text h2').get_text(strip=True) == 'Topics'
+
+
+@pytest.mark.django_db
+def test_cfp_text_without_leading_heading_is_unchanged(client, event):
+    _publish_talks(event)
+    with scope(event=event):
+        event.cfp.text = 'Send us your talk.\n\n## Topics'
+        event.cfp.save()
+    response = client.get(_cfp_url(event))
+    assert response.status_code == 200
+    doc = BeautifulSoup(response.rendered_content, 'lxml')
+    main = doc.select_one('main')
+    assert 'Send us your talk.' in main.get_text()
+    assert doc.select_one('main .page-rich-text h2').get_text(strip=True) == 'Topics'
