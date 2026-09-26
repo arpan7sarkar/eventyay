@@ -83,6 +83,16 @@ h2.content-header {
   word-break: break-word;
 }
 
+.page-section-title {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .page-lede {
   margin-top: -5px;
   margin-bottom: 15px;
