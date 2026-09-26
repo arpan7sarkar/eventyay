@@ -16,7 +16,11 @@
 {% block page_heading %}
     {% has_event_perm "base.update_event" request.user request request.event as can_edit_cfp %}
     <div class="d-flex align-items-start">
-        {% translate 'Call for Speakers' as page_heading %}
+        {% if request.event.cfp.is_open or access_code.is_valid %}
+            {% translate 'Call for Speakers' as page_heading %}
+        {% else %}
+            {% translate 'Call for Speakers (Closed)' as page_heading %}
+        {% endif %}
         {% include 'common/includes/page_heading.html' %}
         {% if can_edit_cfp %}
             {% orga_edit_link request.event.cfp.urls.text %}

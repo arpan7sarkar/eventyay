@@ -1755,6 +1755,15 @@ class PageHeadingTest(EventTestMixin, SoupTest):
         doc = self.get_doc('/%s/%s/' % (self.orga.slug, self.event.slug))
         self.assertEqual(len(doc.select('main h2.content-header')), 0)
 
+    def test_subevent_landing_page_does_not_duplicate_event_name_as_content_header(self):
+        self.event.has_subevents = True
+        self.event.save()
+        self.event.settings.set('event_logo_image', 'https://example.com/logo.png')
+        self.event.settings.set('logo_show_title', True)
+        doc = self.get_doc('/%s/%s/' % (self.orga.slug, self.event.slug))
+        self.assertEqual(len(doc.select('main h1.page-title')), 1)
+        self.assertEqual(len(doc.select('main h2.content-header')), 0)
+
     def test_meetup_event_info_page_heading_is_details(self):
         self.event.settings.set('event_type', 'meetup')
         doc = self.get_doc('/%s/%s/' % (self.orga.slug, self.event.slug))

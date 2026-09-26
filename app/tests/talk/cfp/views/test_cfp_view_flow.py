@@ -39,7 +39,7 @@ def test_cfp_landing_page_has_page_title_when_closed(client, event):
     doc = BeautifulSoup(response.rendered_content, 'lxml')
     headings = doc.select('main h1.page-title')
     assert len(headings) == 1
-    assert headings[0].get_text(strip=True) == 'Call for Speakers'
+    assert headings[0].get_text(strip=True) == 'Call for Speakers (Closed)'
 
 
 @pytest.mark.django_db

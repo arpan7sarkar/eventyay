@@ -132,11 +132,6 @@
 
     {% if request.event.has_subevents %}
         {% if not subevent %}
-            {% if event_logo_image and request.event.settings.logo_show_title %}
-                <h2 class="content-header">
-                    <a class="event-public-text-link" href="{{ event_public_presale_home }}">{{ event.name|event_localize }}</a>
-                </h2>
-            {% endif %}
             {% if frontpage_text and not cart_namespace %}
                 <div>
                     {{ frontpage_text|event_localize|rich_text }}
