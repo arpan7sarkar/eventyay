@@ -102,7 +102,7 @@ class EventLanguageEnforceDefaultTest(TestCase):
         self.assertTrue(response.wsgi_request.event_language_enforce_ui)
         self.assertEqual(response.wsgi_request.event_language, 'gu')
         self.assertEqual(response['Content-Language'], 'da')
-        self.assertContains(response, 'class="content-header">')
+        self.assertContains(response, 'class="event-title event-public-text-link"')
         self.assertContains(response, 'Gujarati Event Name</a>')
 
     def test_explicit_enforce_off_is_respected(self):
