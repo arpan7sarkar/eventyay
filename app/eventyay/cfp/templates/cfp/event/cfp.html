@@ -34,7 +34,7 @@
 {% block content %}
     {% with cfp=request.event.cfp %}
         {% can_view_featured_sessions_public request.event as can_view_featured_submissions %}
-        <div class="page-rich-text">{{ cfp.text|event_localize|rich_text }}</div>
+        <div class="page-rich-text">{{ cfp.text|event_localize|rich_text_without_title }}</div>
         {% if request.event.cfp.settings.show_deadline and request.event.cfp.max_deadline %}
             <p>
                 <strong>
