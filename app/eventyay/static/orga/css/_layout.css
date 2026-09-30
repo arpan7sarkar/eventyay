@@ -222,8 +222,13 @@ details.card {
   aside.sidebar:not(.sidebar-uncollapsed) {
     transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  aside.sidebar:not(.sidebar-uncollapsed):hover > * {
+  aside.sidebar:not(.sidebar-uncollapsed):focus-within > * {
     animation: sidebar-hold-width 0.2s;
+  }
+  @media (hover: hover) {
+    aside.sidebar:not(.sidebar-uncollapsed):hover > * {
+      animation: sidebar-hold-width 0.2s;
+    }
   }
 }
 
@@ -243,7 +248,7 @@ aside.sidebar {
   overflow-y: auto;
   
   &.sidebar-uncollapsed,
-  &:hover {
+  &:focus-within {
     width: 250px;
 
     a.nav-link i+span {
@@ -263,6 +268,32 @@ aside.sidebar {
       #search-context-text,
       .arrow {
         display: flex;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      width: 250px;
+
+      a.nav-link i+span {
+        display: inline-block;
+      }
+
+      .nav-fold div>a {
+        display: block;
+      }
+
+      #nav-search {
+        #search-context-icon .fa-stack-1x,
+        #search-context-icon .fa-stack-2x {
+          margin-left: 0;
+        }
+
+        #search-context-text,
+        .arrow {
+          display: flex;
+        }
       }
     }
   }
