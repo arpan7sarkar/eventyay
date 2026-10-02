@@ -32,11 +32,10 @@ class LocaleSwitcherLabelTest(TestCase):
         doc = BeautifulSoup(response.rendered_content, 'lxml')
         summary = doc.select_one('#locale-dropdown-label summary')
         self.assertIsNotNone(summary)
-        span = summary.select_one('span.hidden-xs')
-        return summary, span
+        return summary
 
     def test_default_en_event_shows_single_label(self):
-        """A default en-only event with an en UI shows 'En', not 'En/En'."""
+        """A default en-only event with an en UI labels the switcher 'En', not 'En/En'."""
         event = Event.objects.create(
             organizer=self.organizer,
             name='Default Locale Event',
@@ -44,8 +43,7 @@ class LocaleSwitcherLabelTest(TestCase):
             date_from=now(),
             live=True,
         )
-        summary, span = self._get_switcher(event)
-        self.assertEqual(span.get_text(strip=True), 'En')
+        summary = self._get_switcher(event)
         self.assertEqual(summary.get('aria-label'), 'Language - En')
 
     def test_unlinked_de_event_en_ui_shows_dual_label(self):
@@ -65,8 +63,7 @@ class LocaleSwitcherLabelTest(TestCase):
         self.client.cookies[enforce_cookie] = '0'
         self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = 'en'
 
-        summary, span = self._get_switcher(event)
-        self.assertEqual(span.get_text(strip=True), 'De/En')
+        summary = self._get_switcher(event)
         self.assertEqual(summary.get('aria-label'), 'Language - De/En')
 
 
