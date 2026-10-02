@@ -279,19 +279,21 @@
 							:class="{disabled: isWipPreview}",
 							@click="!isWipPreview && (versionOpen = !versionOpen)",
 							:aria-label="isWipPreview ? publicOnlyFeatureHint : t.schedule_versions",
-							:aria-expanded="versionOpen ? 'true' : 'false'",
-							aria-haspopup="menu"
+							:aria-disabled="isWipPreview ? 'true' : null",
+							:aria-expanded="isWipPreview ? null : (versionOpen ? 'true' : 'false')",
+							:aria-haspopup="isWipPreview ? null : 'menu'"
 						)
 							svg.tb-icon(viewBox="0 0 24 24", fill="none", stroke="currentColor", stroke-width="2", stroke-linecap="round", stroke-linejoin="round")
-								rect(x="10" y="5" width="10" height="14" rx="2")
-								line(x1="7" y1="7" x2="7" y2="17")
-								line(x1="4" y1="8" x2="4" y2="16")
+								rect(x="11" y="4" width="10" height="16" rx="2")
+								line(x1="7" y1="6" x2="7" y2="18")
+								line(x1="3" y1="8" x2="3" y2="16")
 						.version-menu(v-if="versionOpen")
 							a.version-item(
 								v-for="v in versionOptions",
 								:key="v.version",
 								:href="v.url",
-								:class="{active: v.version === version}"
+								:class="{active: v.version === version}",
+								:aria-current="v.version === version ? 'page' : null"
 							)
 								span {{ formatVersionLabel(v.version) }}
 								span.version-current-badge(v-if="v.isCurrent") {{ t.current }}
@@ -1533,7 +1535,7 @@ export default {
 			display: inline-block
 		.version-menu
 			position: absolute
-			right: 0
+			inset-inline-end: 0
 			top: 100%
 			background: #fff
 			min-width: 180px
