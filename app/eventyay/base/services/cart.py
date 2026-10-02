@@ -1038,12 +1038,8 @@ class CartManager:
                 Q(voucher=voucher) & Q(event=self.event) & Q(expires__gte=self.now_dt)
             ).exclude(pk__in=[op.position.id for op in self._operations if isinstance(op, self.ExtendOperation)])
             cart_count = redeemed_in_carts.count()
-            v_avail = voucher.max_usages - voucher.redeemed - cart_count
-            
-            # Validate availability after acquiring lock to prevent over-redemption
-            if v_avail < count:
-                raise CartError(error_messages['voucher_redeemed'])
-            
+            v_avail = max(0, voucher.max_usages - voucher.redeemed - cart_count)
+
             if cart_count > 0:
                 self._voucher_depend_on_cart.add(voucher)
             vouchers_ok[voucher] = v_avail
