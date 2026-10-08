@@ -1064,7 +1064,7 @@ class CartManager:
             v_avail = voucher.max_usages - voucher.redeemed - cart_count
             
             # Validate availability after acquiring lock to prevent over-redemption
-            if v_avail < count:
+            if v_avail < 1:
                 raise CartError(error_messages['voucher_redeemed'])
             
             if cart_count > 0:
