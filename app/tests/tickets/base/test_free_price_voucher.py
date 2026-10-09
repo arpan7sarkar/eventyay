@@ -204,6 +204,7 @@ EXPLICIT_MINIMUM_CASES = [
     ('50.00', 'subtract', '30.00', '20.00', '50.00'),
     ('60.00', 'subtract', '30.00', '30.00', '60.00'),
     ('10.00', 'subtract', '30.00', '20.00', '50.00'),
+    ('30.00', 'subtract', '30.00', '20.00', '50.00'),
     ('60.00', 'percent', '50.00', '30.00', '60.00'),
     ('60.00', 'set', '15.00', '15.00', '60.00'),
 ]
@@ -224,6 +225,14 @@ def test_cart_accepts_voucher_price_with_explicit_minimum(
     cp = add_to_cart(event, product, Decimal(minimum), voucher)
     assert cp.price == Decimal(minimum)
     assert cp.price_before_voucher == Decimal(before_voucher)
+
+
+@pytest.mark.django_db
+def test_cart_accepts_price_between_voucher_price_and_explicit_minimum(event, product):
+    voucher = explicit_minimum_voucher(event, product, '30.00', 'subtract', '30.00')
+    cp = add_to_cart(event, product, Decimal('25.00'), voucher)
+    assert cp.price == Decimal('25.00')
+    assert cp.price_before_voucher == Decimal('50.00')
 
 
 @pytest.mark.django_db
