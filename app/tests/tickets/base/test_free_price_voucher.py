@@ -199,6 +199,52 @@ def test_expired_cart_position_is_repriced_when_voucher_is_lowered(event, produc
     assert cp.price_before_voucher == Decimal('50.00')
 
 
+EXPLICIT_MINIMUM_CASES = [
+    ('50.00', 'subtract', '30.00', '20.00', '50.00'),
+    ('60.00', 'subtract', '30.00', '30.00', '60.00'),
+    ('10.00', 'subtract', '30.00', '20.00', '50.00'),
+    ('60.00', 'percent', '50.00', '30.00', '60.00'),
+    ('60.00', 'set', '15.00', '15.00', '60.00'),
+]
+
+
+def explicit_minimum_voucher(event, product, free_price_min, mode, value):
+    product.free_price_min = Decimal(free_price_min)
+    product.save()
+    return event.vouchers.create(code='EXPLICIT', product=product, price_mode=mode, value=Decimal(value))
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('free_price_min, mode, value, minimum, before_voucher', EXPLICIT_MINIMUM_CASES)
+def test_cart_accepts_voucher_price_with_explicit_minimum(
+    event, product, free_price_min, mode, value, minimum, before_voucher
+):
+    voucher = explicit_minimum_voucher(event, product, free_price_min, mode, value)
+    cp = add_to_cart(event, product, Decimal(minimum), voucher)
+    assert cp.price == Decimal(minimum)
+    assert cp.price_before_voucher == Decimal(before_voucher)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('free_price_min, mode, value, minimum, before_voucher', EXPLICIT_MINIMUM_CASES)
+def test_cart_rejects_price_below_voucher_adjusted_explicit_minimum(
+    event, product, free_price_min, mode, value, minimum, before_voucher
+):
+    voucher = explicit_minimum_voucher(event, product, free_price_min, mode, value)
+    with pytest.raises(CartError) as excinfo:
+        add_to_cart(event, product, Decimal(minimum) - Decimal('0.01'), voucher)
+    assert minimum in str(excinfo.value)
+
+
+@pytest.mark.django_db
+def test_cart_without_voucher_keeps_explicit_minimum(event, product):
+    product.free_price_min = Decimal('60.00')
+    product.save()
+    with pytest.raises(CartError) as excinfo:
+        add_to_cart(event, product, Decimal('55.00'))
+    assert '60.00' in str(excinfo.value)
+
+
 @pytest.fixture
 def order_position(event, product, voucher):
     order = Order.objects.create(

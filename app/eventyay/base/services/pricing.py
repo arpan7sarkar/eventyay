@@ -48,6 +48,7 @@ def get_price(
         if subevent and variation.pk in subevent.var_price_overrides:
             price = subevent.var_price_overrides[variation.pk]
 
+    base_price = price
     if voucher:
         price = voucher.calculate_price(price, max_discount=max_discount)
 
@@ -89,7 +90,10 @@ def get_price(
         min_gross = price.gross
 
         if product.free_price_min is not None:
-            min_price_obj = tax_rule.tax(product.free_price_min, invoice_address=invoice_address)
+            min_floor = max(base_price, product.free_price_min)
+            if voucher:
+                min_floor = voucher.calculate_price(min_floor, max_discount=max_discount)
+            min_price_obj = tax_rule.tax(min_floor, invoice_address=invoice_address)
             # Effective minimum: never allow undercuts of voucher/subevent-adjusted base price.
             min_net = max(min_price_obj.net, min_net)
             min_gross = max(min_price_obj.gross, min_gross)
