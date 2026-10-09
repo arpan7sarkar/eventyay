@@ -5,6 +5,7 @@ import pytest
 from django.utils.timezone import now
 from django_scopes import scope
 
+from eventyay.api.serializers.cart import CartPositionCreateSerializer
 from eventyay.base.models import (
     CartPosition,
     Event,
@@ -243,6 +244,30 @@ def test_cart_without_voucher_keeps_explicit_minimum(event, product):
     with pytest.raises(CartError) as excinfo:
         add_to_cart(event, product, Decimal('55.00'))
     assert '60.00' in str(excinfo.value)
+
+
+def validate_cart_position(event, product, price):
+    serializer = CartPositionCreateSerializer(
+        data={'product': product.pk, 'price': price, 'answers': []}, context={'event': event}
+    )
+    serializer.is_valid()
+    return serializer
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('price, minimum', [('999.00', '100.00'), ('49.00', '50.00')])
+def test_cart_api_rejects_free_price_out_of_bounds(event, product, price, minimum):
+    product.free_price_max = Decimal('100.00')
+    product.save()
+    serializer = validate_cart_position(event, product, price)
+    assert minimum in str(serializer.errors['price'])
+
+
+@pytest.mark.django_db
+def test_cart_api_accepts_free_price_in_bounds(event, product):
+    product.free_price_max = Decimal('100.00')
+    product.save()
+    assert validate_cart_position(event, product, '75.00').is_valid()
 
 
 @pytest.fixture
