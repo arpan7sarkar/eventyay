@@ -1213,6 +1213,7 @@ class CartManager:
 
     def _perform_operations(self):
         vouchers_ok = self._get_voucher_availability()
+        vouchers_left = {}
         quotas_ok = self._get_quota_availability()
         err = None
         warning = None
@@ -1249,6 +1250,7 @@ class CartManager:
                     quota_available_count = min(requested_count, min(quotas_ok[q] for q in op.quotas))
 
                 if op.voucher:
+                    voucher_left = vouchers_left.setdefault((type(op), op.voucher), vouchers_ok[op.voucher])
                     voucher_available_count = min(voucher_available_count, vouchers_ok[op.voucher])
 
                 if quota_available_count < 1:
@@ -1256,13 +1258,11 @@ class CartManager:
                 elif quota_available_count < requested_count:
                     err = err or error_messages['in_part']
 
-                if voucher_available_count < 1:
-                    if op.voucher in self._voucher_depend_on_cart:
-                        err = err or error_messages['voucher_redeemed_cart'] % GlobalSettingsObject().settings.get('reservation_time', default='30')
-                    else:
+                if voucher_available_count < requested_count:
+                    if voucher_left < 1:
                         err = err or error_messages['voucher_redeemed']
-                elif voucher_available_count < requested_count:
-                    err = err or error_messages['voucher_redeemed_partial'] % voucher_available_count
+                    else:
+                        err = err or error_messages['voucher_redeemed_partial'] % voucher_left
 
                 available_count = min(quota_available_count, voucher_available_count)
 

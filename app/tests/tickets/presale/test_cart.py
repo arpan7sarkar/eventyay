@@ -2561,7 +2561,7 @@ class CartTest(CartTestMixin, TestCase):
             follow=True,
         )
         doc = BeautifulSoup(response.rendered_content, 'lxml')
-        self.assertIn('already been used', doc.select('.alert-danger')[0].text)
+        self.assertIn('can only be redeemed 1 more times', doc.select('.alert-danger')[0].text)
         with scopes_disabled():
             positions = CartPosition.objects.filter(cart_id=self.session_key, event=self.event)
             assert positions.count() == 1
