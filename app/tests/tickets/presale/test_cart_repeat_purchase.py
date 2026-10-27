@@ -50,14 +50,19 @@ def repeat_purchase(client):
 @pytest.mark.parametrize('status', [Order.STATUS_PENDING, Order.STATUS_PAID])
 @pytest.mark.parametrize('restricted', [False, True])
 @pytest.mark.parametrize('ajax', [False, True])
-def test_repeat_purchase_respects_product_limit(client, repeat_purchase, status, restricted, ajax):
+@pytest.mark.parametrize('email', ['customer@example.com', 'Customer@Example.COM', 'another@example.com'])
+def test_repeat_purchase_respects_product_limit(client, repeat_purchase, status, restricted, ajax, email):
     event, product, order, cart_id = repeat_purchase
     order.status = status
     order.save()
     if restricted:
         property = event.product_meta_properties.create(name='limit_one_per_user')
         ProductMetaValue.objects.create(product=product, property=property, value='1')
-    blocked = restricted and status in (Order.STATUS_PENDING, Order.STATUS_PAID)
+        CartPosition.objects.filter(event=event, cart_id=cart_id).delete()
+    session = client.session
+    session['carts'][cart_id]['email'] = email
+    session.save()
+    blocked = restricted and email != 'another@example.com'
     data = {f'item_{product.pk}': '1'}
     if ajax:
         data['ajax'] = '1'
@@ -83,9 +88,10 @@ def test_repeat_purchase_respects_product_limit(client, repeat_purchase, status,
         assert any('Only one ticket per user' in alert for alert in alerts)
     else:
         assert not alerts
-    assert CartPosition.objects.filter(event=event, cart_id=cart_id, product=product).count() == (
-        1 if restricted else 2
-    )
+    expected_count = 1 if restricted else 2
+    if blocked:
+        expected_count = 0
+    assert CartPosition.objects.filter(event=event, cart_id=cart_id, product=product).count() == expected_count
 
 
 @pytest.mark.parametrize('status', [Order.STATUS_PENDING, Order.STATUS_PAID])

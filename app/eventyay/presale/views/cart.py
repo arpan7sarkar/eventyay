@@ -524,7 +524,7 @@ class CartAdd(EventViewMixin, CartActionMixin, AsyncAction, View):
                 if product_ids:
                     exists = OrderPosition.objects.filter(
                         order__event=self.request.event,
-                        order__email=email,
+                        order__email__iexact=email,
                         order__status__in=[Order.STATUS_PENDING, Order.STATUS_PAID],
                         product_id__in=product_ids,
                         product__meta_values__property__name='limit_one_per_user',
